@@ -1,0 +1,129 @@
+#!/bin/bash
+
+# Email of each admin
+# MAIL="admin1@example.tld admin2@example.tld"
+MAIL=""
+
+#==============================================================================
+# Monitoring code
+#==============================================================================
+
+# Check if it's always the same HTTP content
+# usage: check_content URL HASH
+check_content () {
+    check_content4 $1 $2
+    check_content6 $1 $2
+}
+
+# Same but just on ipv4
+check_content4 () {
+    hash="$(curl -4 -s $1 | md5sum | cut -d ' ' -f1)"
+    [ "$hash" == "$2" ] ||
+        alert "$1 $hash" $MAIL
+    sleep 3s
+}
+
+# Same but just on ipv4
+check_content6 () {
+    hash6="$(curl -6 -s $1 | md5sum | cut -d ' ' -f1)"
+    [ "$hash6" == "$2" ] ||
+        alert "$1 $hash6 ipv6" $MAIL
+    sleep 3s
+}
+
+# Check if dig A request return the correct answer
+# usage: check_dig NAMESERVER DOMAIN IPv4
+check_dig () {
+    hash="$(dig +short @$1 A $2)"
+    hash6="$(dig -6 +short @$1 A $2)"
+    [ "$hash" == "$3" ] ||
+        alert "dns $1 $hash" $MAIL
+    [ "$hash6" == "$3" ] ||
+        alert "dns $1 $hash6 ipv6" $MAIL
+    sleep 1s
+}
+
+# Check if it returns a 200 answer
+# usage: check_dig URL
+check_200 () {
+    [ "$(curl -4 -s -I -w '%{http_code}' -o /dev/null $1)" == "200" ] ||
+        alert "$1 ipv4" $MAIL
+    sleep 3s
+    [ "$(curl -6 -s -I -w '%{http_code}' -o /dev/null $1)" == "200" ] ||
+        alert "$1 ipv6" $MAIL
+    sleep 3s
+}
+
+# Check if the machine ping
+# usage: check_ping DOMAIN_OR_IP
+check_ping () {
+    ping -c 1 $1 > /dev/null ||
+        alert "$1 ipv4" $MAIL
+    ping6 -c 1 $1 > /dev/null ||
+        alert "$1 ipv6" $MAIL
+}
+
+# Send an alert to the admin
+alert () {
+    echo "$1 has changed or not reachable" | mail -s "[ljf-MONITOR] $1 has changed or not reachable" $2
+}
+
+#==============================================================================
+# Configuration
+#==============================================================================
+# Check All server ping
+check_ping bearnaise.yunohost.org
+check_ping aioli.yunohost.org
+check_ping demo.yunohost.org
+check_ping forum.yunohost.org
+#check_ping tartare.yunohost.org #ipv6 issue
+
+# Check critic services (needed for yunohost instances works correctly)
+check_dig ns0.yunohost.org toto.noho.st 81.57.118.36
+check_dig ns0.yunohost.org toto.nohost.me 162.243.7.71
+#check_dig ns1.yunohost.org toto.noho.st 81.57.118.36
+#check_dig ns1.yunohost.org toto.nohost.me 162.243.7.71
+check_content https://repo.yunohost.org/ 1477866e988c7180d486afec7bd4341c
+check_content https://dyndns.yunohost.org/ c9b426d468e2145a212032c16bebc26f
+check_content4 https://ip.yunohost.org/ 32453f31e928721f8c272c6dda5f86e6
+check_content6 https://ip6.yunohost.org/ 0340bdddba91963e24f153adaf3c4570
+check_content6 https://ipv6.yunohost.org/ 0340bdddba91963e24f153adaf3c4570
+check_200 https://app.yunohost.org/official.json
+check_200 https://app.yunohost.org/community.json
+check_200 https://app.yunohost.org/list.json
+
+# Check for install resources
+check_content https://install-app.yunohost.org/ b215745d9fdd5302d2b1f95083d74604
+check_content https://paste.yunohost.org/ 6d6f3a20399719cd0cfbd4f165de076c
+check_200 https://install.yunohost.org/
+check_content https://install.yunohost.org/install_yunohost 4c53314cd822fff7423821e08f0c850d
+check_content https://build.yunohost.org/ 207d7c46e03352d98dd533fe38f9bb4c
+check_content https://build.yunohost.org/yunohost-jessie-201701261126-sdraspi-stable.zip.sum cf2e8d4c40fbee7bb57ac4541751e989
+check_content https://build.yunohost.org/yunohost-jessie-0127171259-amd64-stable.iso.sum 6d07211e77e4051b880925719d8bb314
+check_content https://build.yunohost.org/yunohost-jessie-0127171609-i386-stable.iso.sum 2bebadec817843b942a5bf4a7b7b8c7e
+
+# Check for public website, support tools
+check_200 https://forum.yunohost.org/
+check_200 https://yunohost.org/
+check_content https://www.yunohost.org/ a718c83022dda2cc03813d97ea9f3a9a
+check_content https://ports.yunohost.org/ ffc3113a26780253c9f005523dc39fc8
+check_content https://im.yunohost.org/logs/ 4b0a139edf5c86f2e0e5f5b915082a0d
+check_content https://chat.yunohost.org/ feafc193207604dc21bd20ca2077a7ce
+#check_content https://demo.yunohost.org/yunohost/sso/ c4cb70333b081ebef35ab2d32e941d9e
+
+# Check for contribution tools
+#check_200 https://dev.yunohost.org/
+check_200 http://vinaigrette.yunohost.org/
+check_200 https://dash.yunohost.org/
+check_200 https://ci-apps.yunohost.org/jenkins/
+#check_200 https://ci-core.yunohost.org/
+check_content https://list.yunohost.org/listinfo d1f6166e91acbbb75dbee8f6db472e4d
+check_200 https://wekan.yunohost.org/b/ufMZHMyRpfCqssFY5/yunohost
+check_200 https://translate.yunohost.org/
+
+# Check for internetcube services
+check_200 https://repo.internetcu.be/
+check_200 https://labriqueinter.net/
+check_200 https://repo.labriqueinter.net/
+check_content https://install.labriqueinter.net/ 8535d71123c772afaf708de02ce97d30
+check_200 https://wiki.labriqueinter.net/doku.php
