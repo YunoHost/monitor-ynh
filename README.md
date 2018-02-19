@@ -1,6 +1,8 @@
 # monitor-ynh
 A small infra monitoring tool
 
+You need to install bc and redis-server.
+
 You need to configure a cron like this:
 
 ```
