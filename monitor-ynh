@@ -49,7 +49,9 @@ check_200 () {
         $IPV4 && check_200 4 $@
         $IPV6 && check_200 6 $@
     else
-        [ "$(curl -$1 -s -I -w '%{http_code}' -o /dev/null $3)" == "200" ]
+	# Firstly we test with -I option to just download headers, 
+	# if it fails we check with a true GET HTTP REQUEST
+        [ "$(curl -$1 -s -I -w '%{http_code}' -o /dev/null $3)" == "200" ] || [ "$(curl -$1 -s -w '%{http_code}' -o /dev/null $3)" == "200" ]
         register_event $? $2 "${FUNCNAME[0]} $*" "[ipv$1] $3 call fails"
         sleep 2s
     fi
@@ -139,7 +141,7 @@ $IPV6 && check_content 6 2 https://ipv6.yunohost.org/ 0340bdddba91963e24f153adaf
 check_200 2 https://app.yunohost.org/official.json
 check_200 2 https://app.yunohost.org/community.json
 check_200 2 https://app.yunohost.org/list.json
-check_200 2 http://forge.yunohost.org/
+check_200 2 https://forge.yunohost.org/debian/
 
 # Check for install resources
 check_content 2 https://install-app.yunohost.org/ b215745d9fdd5302d2b1f95083d74604
@@ -154,7 +156,7 @@ check_200 2 https://install.yunohost.org/
 # Check for public website, support tools
 check_200 2 https://forum.yunohost.org/
 check_200 2 https://yunohost.org/
-check_200 2 https://www.yunohost.org/
+#check_200 2 https://www.yunohost.org/
 check_content 2 https://ports.yunohost.org/ ffc3113a26780253c9f005523dc39fc8
 check_content 2 https://im.yunohost.org/logs/ 4b0a139edf5c86f2e0e5f5b915082a0d
 check_content 2 https://chat.yunohost.org/ feafc193207604dc21bd20ca2077a7ce
@@ -163,9 +165,9 @@ check_200 4 https://demo.yunohost.org/yunohost/sso/
 # Check for contribution tools
 #check_200 2 https://dev.yunohost.org/
 check_200 2 https://dash.yunohost.org/
-check_200 2 https://ci-apps.yunohost.org/
-#check_200 2 https://ci-core.yunohost.org/
-check_200 2 https://ci-apps-arm.yunohost.org/
+check_200 2 https://ci-apps.yunohost.org/ci/
+#check_200 2 https://ci-core.yunohost.org/ci/
+check_200 2 https://ci-apps-arm.yunohost.org/ci/
 check_200 2 https://translate.yunohost.org/
 
 # Check for internetcube services
