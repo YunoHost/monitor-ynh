@@ -1,7 +1,15 @@
 #!/bin/bash
 
-MAIL="root@yunohost.org org+monitor-ynh@grimaud.me"
+MAIL="root@yunohost.org your-email@your-domain.tld"
 
+IPV4=false
+if ping -c 1 9.9.9.9 > /dev/null && dig +short A wikipedia.fr > /dev/null; then
+   IPV4=true
+fi
+IPV6=false
+if ping6 -c 1 2620:0:862:ed1a::1 > /dev/null && dig +short A wikipedia.fr > /dev/null; then
+   IPV6=true
+fi
 #==============================================================================
 # Monitoring code
 #==============================================================================
@@ -10,8 +18,8 @@ MAIL="root@yunohost.org org+monitor-ynh@grimaud.me"
 # usage: check_content [IP_VERSION] NB_IGNORED URL HASH
 check_content () {
     if (( $# < 4 ));then
-        check_content 4 $@
-        check_content 6 $@
+        IPV4 && check_content 4 $@
+        IPV6 && check_content 6 $@
     else
         hash="$(curl -$1 -s $3 | md5sum | cut -d ' ' -f1)"
         [ "$hash" == "$4" ]
@@ -24,8 +32,8 @@ check_content () {
 # usage: check_dig [IP_VERSION] NB_IGNORED NAMESERVER DOMAIN IPv4
 check_dig () {
     if (( $# < 5 ));then
-        check_dig 4 $@
-        check_dig 6 $@
+        IPV4 && check_dig 4 $@
+        IPV6 && check_dig 6 $@
     else
         hash="$(dig -$1 +short @$3 A $4)"
         [ "$hash" == "$5" ]
@@ -38,8 +46,8 @@ check_dig () {
 # usage: check_dig [IP_VERSION] NB_IGNORED URL
 check_200 () {
     if (( $# < 3 ));then
-        check_200 4 $@
-        check_200 6 $@
+        IPV4 && check_200 4 $@
+        IPV6 && check_200 6 $@
     else
         [ "$(curl -$1 -s -I -w '%{http_code}' -o /dev/null $3)" == "200" ]
         register_event $? $2 "${FUNCNAME[0]} $*" "[ipv$1] $3 call fails"
@@ -51,8 +59,8 @@ check_200 () {
 # usage: check_ping [IP_VERSION] NB_IGNORED DOMAIN_OR_IP
 check_ping () {
     if (( $# < 3 ));then
-        check_ping 4 $@
-        check_ping 6 $@
+        IPV4 && check_ping 4 $@
+        IPV6 && check_ping 6 $@
     else
 	if [ "$1" -eq "4" ]; then
             ping -c 1 $3 > /dev/null
@@ -105,7 +113,6 @@ alert() {
     echo "$1" | mail -s "[ljf-MONITOR]$1" $MAIL &> /dev/null
 }
 
-#ping -c 1 9.9.9.9 > /dev/null || dig +short A wikipedia.fr > /dev/null || exit 1
 
 #==============================================================================
 # Configuration
@@ -126,9 +133,9 @@ check_dig 2 ns1.yunohost.org toto.noho.st 81.57.118.36
 check_dig 2 ns1.yunohost.org toto.nohost.me 162.243.7.71
 check_content 2 https://repo.yunohost.org/ 1477866e988c7180d486afec7bd4341c
 check_content 2 https://dyndns.yunohost.org/ c9b426d468e2145a212032c16bebc26f
-check_content 4 2 https://ip.yunohost.org/ 32453f31e928721f8c272c6dda5f86e6
-check_content 6 2 https://ip6.yunohost.org/ 0340bdddba91963e24f153adaf3c4570
-check_content 6 2 https://ipv6.yunohost.org/ 0340bdddba91963e24f153adaf3c4570
+IPV4 && check_content 4 2 https://ip.yunohost.org/ 32453f31e928721f8c272c6dda5f86e6
+IPV6 && check_content 6 2 https://ip6.yunohost.org/ 0340bdddba91963e24f153adaf3c4570
+IPV6 && check_content 6 2 https://ipv6.yunohost.org/ 0340bdddba91963e24f153adaf3c4570
 check_200 2 https://app.yunohost.org/official.json
 check_200 2 https://app.yunohost.org/community.json
 check_200 2 https://app.yunohost.org/list.json
