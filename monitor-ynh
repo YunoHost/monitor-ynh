@@ -1,6 +1,6 @@
 #!/bin/bash
-
-source ./monitor-ynh-settings
+script_dir="$(dirname "$0")"
+source $script_dir/monitor-ynh-settings
 
 IPV4=false
 if ping -c 1 9.9.9.9 &> /dev/null && dig +short A wikipedia.fr &> /dev/null; then
