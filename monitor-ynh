@@ -97,9 +97,9 @@ register_event () {
     else
     local count=$(redis-cli --raw incr $var_name)
     local nb_ignored=$2
-    local reminder=$(( $count - $nb_ignore + 1 ))
-    #echo "[KO] ${@: -1}"
-    reminder="$(echo obase=2\;$reminder | bc | tail -c +2)0"
+    #local reminder=$(( $count - $nb_ignore + 1 ))
+    reminder "${@: -1}"
+    #reminder="$(echo obase=2\;$reminder | bc | tail -c +2)0"
     if [ $count -eq $2 ]; then
         alert " ${@: -1}"
     #elif [ $count -gt $nb_ignore ] && [ $reminder -eq 0 ]; then
@@ -107,8 +107,14 @@ register_event () {
     fi
     fi
 }
-alert_msg=""
+reminder_msg=""
 newline=$'\n'
+# Add to reminder
+# Usage: reminder ID_TEXT
+reminder() {
+    reminder_msg="${reminder_msg}[KO] $1${newline}"
+}
+alert_msg=""
 # Send on alert
 # Usage: alert ID_TEXT
 alert() {
@@ -178,5 +184,5 @@ check_content 2 https://install.labriqueinter.net/ 7c2a6659857dcddee846403bdb10b
 check_200 2 https://wiki.labriqueinter.net/doku.php
 
 if [[ ! -z "$alert_msg" ]]; then
-    echo "$alert_msg" | mail -s "[$PSEUDO-MONITOR] !!!" $MAIL &> /dev/null
+    echo "$alert_msg$newline$reminder_msg" | mail -s "[$PSEUDO-MONITOR] !!!" $MAIL &> /dev/null
 fi
