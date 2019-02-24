@@ -171,7 +171,7 @@ check_200 4 https://demo.yunohost.org/yunohost/sso/
 # Check for contribution tools
 #check_200 2 https://dev.yunohost.org/
 check_200 2 https://dash.yunohost.org/
-check_200 2 https://ci-apps.yunohost.org/ci/
+check_200 4 https://ci-apps.yunohost.org/ci/
 #check_200 2 https://ci-core.yunohost.org/ci/
 check_200 2 https://ci-apps-arm.yunohost.org/ci/
 check_200 2 https://translate.yunohost.org/
